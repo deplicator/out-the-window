@@ -7,12 +7,20 @@
     <script src="config.js"></script>
     <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
     <style>
+        body {
+            background-position: 50% 0;
+            background-repeat: no-repeat;
+            font-weight: bold;
+            overflow: hidden;
+        }
         .container {
+            background-color: rgba(255, 255, 255, 0.5);
             max-width: 300px;
-            max-height: 220px;
+            height: 100vh;
         }
         #temperature {
             font-size: 40px;
+            font-weight: normal;
         }
         #temperature:after {
             content: "\2109";
@@ -33,7 +41,9 @@
             clear: both;
         }
         #sunstuff {
+            background-color: rgba(255, 255, 255, 0.5);
             bottom: 0px;
+            left: 0px;
             position: absolute;
             width: 300px;
         }
@@ -47,7 +57,6 @@
             bottom: 0px;
             width: 300px;
         }
-
     </style>
 </head>
 <body>
@@ -73,14 +82,16 @@
             <div id="sunrise" class="col-xs-6 text-center"></div>
             <div id="sunset" class="col-xs-6 text-center"></div>
         </div>
-
+        <img id="map" src="">
     </div>
 
     <script>
-        var weatherObj = {};
-        var diag = false;
-        var ajaxcalls = 0;
+        var weatherData;    // Weather data, everything but map.
+        var weatherMap;     // Base64 encoded weather map.
+        var diag = false;   // Diagnostics?
+        var ajaxcalls = 0;  // Number of callst to wunderground since page load.
 
+        // Cookie functions from quirksmode.
         function createCookie(name, value, days) {
             var expires;
             if (days) {
@@ -108,40 +119,33 @@
             createCookie(name, "", -1);
         }
 
+        // Get weather data and store it in local storage.
         function collectWeather(callback) {
-            if(diag) { console.log('ajax call start'); }
             $.ajax({
                 type: 'GET',
                 url: 'http://api.wunderground.com/api/' + wundergroundKey + '/conditions/forecast/astronomy/q/TX/Cypress.json',
                 success: function(data) {
-                    weatherObj = data;
+                    weatherData = data;
                 }
             }).done(function() {
-                if(diag) { console.log('ajax call done'); }
                 ajaxcalls++;
                 var date = new Date();
-                createCookie('weatherUpdate', date.getTime(), 1);
-                localStorage.setItem('weatherData', JSON.stringify(weatherObj));
-                if(callback) {
-                    callback();
-                }
+                createCookie('weatherUpdate', date.getTime(), 1); // Cookie for weather data update time.
+                localStorage.setItem('weatherData', JSON.stringify(weatherData)); // Save it.
+                if(callback) { callback(); } // Pretty much only for display.
             });
         }
 
+        // Update page elements with weather data.
         function displayWeather() {
-            //console.log(JSON.stringify(weatherObj, null, 4));
+            //console.log(JSON.stringify(weatherData, null, 4));
             $('#weather').html();
-            $('#weather #icon').attr('src', weatherObj.current_observation.icon_url);
-            $('#condition').html(weatherObj.current_observation.weather);
-            $('#temperature').html(weatherObj.current_observation.temp_f);
-            $('#forecast').html(weatherObj.forecast.txt_forecast.forecastday[0].fcttext);
-            $('#sunset').html('sunset<br>' + weatherObj.sun_phase.sunset.hour + ":" + weatherObj.sun_phase.sunset.minute);
-            $('#sunrise').html('sunrise<br>' + weatherObj.sun_phase.sunrise.hour + ":" + weatherObj.sun_phase.sunrise.minute);
-            if ($('.container').height() > 200) {
-                $('#sunstuff').hide();
-            } else {
-                $('#sunstuff').show();
-            }
+            $('#weather #icon').attr('src', weatherData.current_observation.icon_url);
+            $('#condition').html(weatherData.current_observation.weather);
+            $('#temperature').html(weatherData.current_observation.temp_f);
+            $('#forecast').html(weatherData.forecast.txt_forecast.forecastday[0].fcttext);
+            $('#sunset').html('sunset<br>' + weatherData.sun_phase.sunset.hour + ":" + weatherData.sun_phase.sunset.minute);
+            $('#sunrise').html('sunrise<br>' + weatherData.sun_phase.sunrise.hour + ":" + weatherData.sun_phase.sunrise.minute);
             // Show number of API calls if diagnostics are on.
             if(diag) {
                 $('#diag').remove();
@@ -149,13 +153,16 @@
             }
         }
 
-
-
         $(document).ready(function() {
-            if(window.location.hash = '#diag') { diag = true; }
+            if(window.location.hash == '#diag') { diag = true; }
             date = new Date();
 
-            // Check last weather update
+            // Set map as background.
+            ajaxcalls++;
+            $('body').css('background-image', 'url(http://api.wunderground.com/api/' + wundergroundKey + '/animatedradar/animatedsatellite/q/TX/Cypress.gif?num=8&delay=50)');
+
+
+            // Check last weather update.
             if (readCookie('weatherUpdate') === null || parseInt(readCookie('weatherUpdate')) + 300000 < date.getTime()) {
                 if(diag) { console.log('weatherUpdate cookie is null or more than a few minutes old'); }
                 // If more than 5 minutes old get fresh weather data.
@@ -165,21 +172,13 @@
                 // If less than 5 minutes old attempt to lead weather data in local storage.
                 try {
                     if(diag) { console.log('attempt to load weather data from local storage'); }
-                    weatherObj = JSON.parse(localStorage.getItem('weatherData'));
+                    weatherData = JSON.parse(localStorage.getItem('weatherData'));
                     displayWeather();
-                } catch (e) {
+                } catch(e) {
                     // If can't get weather data from local storage get fresh data.
                     if(diag) { console.log('but cannot read weather data from local storage'); }
                     collectWeather(displayWeather);
                 }
-            }
-
-
-
-            if (readCookie('weatherMapUpdate') === null || parseInt(readCookie('weatherMapUpdate')) + 300000 < date.getTime()) {
-
-            } else {
-
             }
 
             // Update weather data every 2.5 mintes.
@@ -189,10 +188,8 @@
 
             // Update map every 30 mintes.
             setInterval(function() {
-                updateMap();
+                $('body').css('background-image', 'url(http://api.wunderground.com/api/' + wundergroundKey + '/animatedradar/animatedsatellite/q/TX/Cypress.gif?num=8&delay=50)');
             }, 1800000);
-
-            //http://api.wunderground.com/api/' + wundergroundKey + '/animatedradar/animatedsatellite/q/TX/Cypress.gif?num=8&delay=50
         });
     </script>
 </body>
