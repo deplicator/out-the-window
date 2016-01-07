@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>What is out there?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <script src="jquery-2.1.4.min.js"></script>
     <script src="bootstrap.min.js"></script>
     <script src="config.js"></script>
@@ -9,13 +10,14 @@
     <style>
         body {
             background-position: 50% 0;
+            background-size: cover;
             background-repeat: no-repeat;
             font-weight: bold;
             overflow: hidden;
         }
         .container {
             background-color: rgba(255, 255, 255, 0.5);
-            max-width: 300px;
+            max-width: 320px;
             height: 100vh;
         }
         #temperature {
@@ -45,7 +47,7 @@
             bottom: 0px;
             left: 0px;
             position: absolute;
-            width: 300px;
+            width: 320px;
         }
         #diag {
             position: absolute;
@@ -55,7 +57,7 @@
             padding: 0 3px;
             font-size: 10px;
             bottom: 0px;
-            width: 300px;
+            width: 320px;
         }
     </style>
 </head>
